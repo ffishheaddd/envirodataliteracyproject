@@ -1,0 +1,392 @@
+---
+title: "Global CO2 Emissions"
+author: "Sam Fishman"
+output: html
+---
+
+
+
+  Carbon dioxide (CO2) is one of ten primary greenhouse gases. High amounts of CO2 trap heat in the Earth's atmosphere, leading to a rise in average global temperatures.This rise in temperature cause observed climate disruptions, including more frequent and severe weather events, and disruptions to ecosystems. CO2 emissions are released into the environment from human activities such as burning fossil fuels, deforestation, and industrial processes. Understanding and monitoring CO2 emissions are critical for evaluating the environmental impact of human activities. CO2 increase data can aid in creating effective climate policies which include striving for sustainable practices that mitigate the adverse effects of climate change on a global scale. 
+
+  
+  Fossil fuel, specifically carbon dioxide (CO2) emissions can be estimated back to 1751 based on literature that reports on historical energy statistics. In 1991 researchers summarized coal, brown coal, peat, and crude oil production by nation and year dating back to the mid 18th century. Researchers also tabulated solid and liquid fuel trade by nation and year. Pre-1950 production of fuel and fuel trade were calculated. From 1950 to 2014 CO2 emissions were estimated from energy statistics published by the United Nations (2017). This data was compiled into one large data set containing information for Nation, Year, total CO2 emissions from fossil-fuels and cement production, emissions from solid fuel consumption, emissions from liquid fuel consumption, emissions from gas fuel consumption, emissions from cement production, emissions from gas flaring, per capita CO2 emissions (metric tons of carbon) and emissions from bunker fuels (not included in the totals). Below, several methods are used to analyze this data in order to draw some conclusions about the history of CO2 emissions, and where they come from.
+
+
+
+```{r include = FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+```
+  
+A table displaying the minimum, mean, and maximum values from 1751 to 2014 across all nations.
+```{r message=FALSE, warning=FALSE, error=FALSE}
+library(readr)
+library(knitr)
+library(kableExtra)
+library(dplyr)
+global_1751_2014 <- read_csv("CSV-FILES/CSV-FILES (2)/CSV-FILES/global.1751_2014.csv")
+global_1751_2014 -> global2014
+#change column names
+colnames(global2014)[2] <- "TotalCO2Em"
+colnames(global2014)[3] <- "GasFuel"
+colnames(global2014)[4] <- "LiquidFuel"
+colnames(global2014)[5] <- "SolidFuel"
+colnames(global2014)[6] <- "CementProduction"
+colnames(global2014)[7] <- "GasFlaring"
+colnames(global2014)[8] <- "PerCapitaCO2"
+#change variables to numeric
+global2014[, 1:8] <- sapply(global2014[, 1:8], as.numeric)
+
+# Emission variable names
+co2_data <- global2014 %>%
+  select(TotalCO2Em, GasFuel, LiquidFuel, SolidFuel, CementProduction, GasFlaring, PerCapitaCO2)
+
+# Summary statistics for each emission variable
+summary_table1 <- co2_data %>%
+  summarise(
+    source = c("TotalCO2", "GasFuel", "LiquidFuel", "SolidFuel", "CementProduction", "GasFlaring", "PerCapitaCO2"),
+    minimum = apply(co2_data, 2, min, na.rm = TRUE),
+    mean = apply(co2_data, 2, mean, na.rm = TRUE),
+    maximum = apply(co2_data, 2, max, na.rm = TRUE))
+#make it look nice
+kbl(summary_table1) %>% kable_paper(bootstrap_options = "striped", full_width = F)
+
+```
+
+  Below is a table and graph depicting total emissions by source per G7 country in 2010. The United States is the leading contributor to CO2 emission output across all emission sources, and Japan is the second highest contributor. 
+```{r message=FALSE, warning=FALSE, error=FALSE}
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(readr)
+nation_1751_2010 <- read_csv("CSV-FILES/CSV-FILES (2)/CSV-FILES/nation.1751_2010.csv")
+nation_1751_2010 -> nation2010
+
+colnames(nation2010)[3] <- "TotalCO2Em"
+colnames(nation2010)[4] <- "SolidFuel"
+colnames(nation2010)[5] <- "LiquidFuel"
+colnames(nation2010)[6] <- "GasFuel"
+colnames(nation2010)[7] <- "CementProduction"
+colnames(nation2010)[8] <- "GasFlaring"
+colnames(nation2010)[9] <- "PerCapitaCO2"
+colnames(nation2010)[10] <- "EmBunkerFuel"
+nation2010[, 2:10] <- sapply(nation2010[, 2:10], as.numeric)
+
+#Creating a G7 string 
+G7 <- c("ITALY (INCLUDING SAN MARINO)", "CANADA", "GERMANY", "JAPAN", "UNITED KINGDOM","UNITED STATES OF AMERICA", "FRANCE (INCLUDING MONACO)")
+
+#creating data set for G7 only 
+data2010_G7 <- nation2010 %>%
+  filter(Year == 2010, Nation %in% G7)
+
+#creating data set for non g7
+data2010_nonG7 <- nation2010 %>% filter(Year == 2010, !Nation %in% G7)
+
+# Group by Nations and summarize CO2 emissions by source
+summary_table2 <- data2010_G7 %>%
+  group_by(Nation) %>%
+  summarise(
+    TotalCO2Em = sum(TotalCO2Em, na.rm = TRUE),
+    GasFuel = sum(GasFuel, na.rm = TRUE),
+    LiquidFuel = sum(LiquidFuel, na.rm = TRUE),
+    SolidFuel = sum(SolidFuel, na.rm = TRUE),
+    CementProduction = sum(CementProduction, na.rm = TRUE),
+    GasFlaring = sum(GasFlaring, na.rm = TRUE),
+    PerCapitaCO2 = sum(PerCapitaCO2, na.rm = TRUE),
+    EmBunkerFuel = sum(EmBunkerFuel, na.rm = TRUE))
+
+# Melt the summary_table2 data frame to long format for better plotting
+library(reshape2)
+melted_summary <- melt(summary_table2, id.vars = "Nation")
+
+# Creating a table for the summarized data
+kbl(summary_table2) %>% kable_paper(bootstrap_options = "striped", full_width = F)
+
+# Plot the bar graph
+ggplot(melted_summary, aes(x = variable, y = value, fill = Nation)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "CO2 Emissions by Source for G7 Countries (2010)",
+       x = "CO2 Source",
+       y = "Total CO2 Emissions") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for better visibility
+
+```
+
+  G7 countries are an informal group of Western nations who began meeting in 1975, and continue to meet annually to discuss various issues. The G7 countries are Canada, France, Germany, Italy, Japan, the United Kingdom, and the United States, while all other nations/countries are considered non-G7. Global economic governance, international security, and energy policy are several topics that are discussed during these meetings. During the 2023 G7 meeting, there was discussion about hastening efforts to reduce upward global temperature trend down to 1.5 degrees Celsius per year while working towards being carbon neutral by 2050. Below shows a graph comparing the total CO2 emissions between G7 and non-G7 countries. spanning the years 1751 to 2014.
+  
+```{r message=FALSE, warning=FALSE, error=FALSE}
+library(readr)
+nation_1751_2014 <- read_csv("CSV-FILES/CSV-FILES (2)/CSV-FILES/nation.1751_2014.csv")
+nation_1751_2014 -> nation20141
+library(dplyr)
+library(ggplot2)
+nation20141[, 2:10] <- sapply(nation20141[, 2:10], as.numeric)
+colnames(nation20141)[3] <- "TotalCO2Em"
+
+# Define G7 countries
+G7_2014 <- c("ITALY (INCLUDING SAN MARINO)", "CANADA", "GERMANY", "JAPAN", "UNITED KINGDOM","UNITED STATES OF AMERICA", "FRANCE (INCLUDING MONACO)")
+
+non_G7_2014 <- nation20141%>% filter(!Nation %in% G7_2014) 
+
+# Create a new column to identify G7 and non-G7 countries
+nation20141 <- nation20141 %>%
+  mutate(G7Status_2014 = ifelse(Nation %in% G7_2014, "G7", "Non-G7"))
+
+# Create a summary table for G7 and non-G7 countries
+summary_table <- nation20141 %>%
+  group_by(G7Status_2014) %>%
+  summarise(TotalCO2Em = sum(TotalCO2Em, na.rm = TRUE))
+
+# Bar chart comparing emission output between G7 and non-G7 countries
+ggplot(data = summary_table, aes(x = G7Status_2014, y = TotalCO2Em, fill = G7Status_2014)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Total Emissions Comparison: G7 vs Non-G7 (2014)", x = "Country Group", y = "Total Emissions") +
+  scale_fill_manual(values = c("G7" = "orange", "Non-G7" = "purple")) +  # Adjust colors as needed
+  theme_minimal()
+
+```
+
+  Based on the TotalCO2Em p-value, which was less than 0.05, can can reject our null hypothesis, which states there is no difference in emissions output between G7 and non-G7 countries. Therefore, the ANOVA results indicate that G7 status significantly influences emissions across various sources. Based on the results, our highest R-squared value of 28.02% suggests that G7Status explains about 28.02% of the variance in LiquidFuel.
+  
+```{r message=FALSE, warning=FALSE, error=FALSE}
+# Load libraries
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(broom)
+library(knitr)
+library(kableExtra)
+
+# Load data
+nation_1751_2014 <- read_csv("CSV-FILES/CSV-FILES (2)/CSV-FILES/nation.1751_2014.csv")
+nation_1751_2014 -> nation2014
+
+# Rename columns
+colnames(nation2014)[3:10] <- c("TotalCO2Em", "SolidFuel", "LiquidFuel", "GasFuel", "CementProduction", "GasFlaring", "PerCapitaCO2", "EmBunkerFuel")
+
+# Convert columns to numeric
+numeric_vars <- c("TotalCO2Em", "SolidFuel", "LiquidFuel", "GasFuel", "CementProduction", "GasFlaring", "PerCapitaCO2", "EmBunkerFuel")
+nation2014[numeric_vars] <- lapply(nation2014[numeric_vars], as.numeric)
+
+# Define G7 countries
+G7_2014 <- c("ITALY (INCLUDING SAN MARINO)", "CANADA", "GERMANY", "JAPAN", "UNITED KINGDOM", "UNITED STATES OF AMERICA", "FRANCE (INCLUDING MONACO)")
+
+# Filter data for G7 and non-G7 countries
+non_G7_2014 <- nation2014 %>% filter(!Nation %in% G7_2014) 
+
+# Create a new column to identify G7 and non-G7 countries
+nation2014 <- nation2014 %>%
+  mutate(G7Status_2014 = ifelse(Nation %in% G7_2014, "G7", "Non-G7"))
+
+nation2014$G7Status_2014 <- factor(nation2014$G7Status_2014, levels = c("Non-G7", "G7"))
+
+# Remove NAs from the response variable
+nation2014 <- na.omit(nation2014, subset = "TotalCO2Em")
+
+# Perform ANOVA for each emission source
+aov1 <- aov(formula = TotalCO2Em ~ G7Status_2014, data = nation2014)
+aov2 <- aov(formula = SolidFuel ~ G7Status_2014, data = nation2014)
+aov3 <- aov(formula = LiquidFuel ~ G7Status_2014, data = nation2014)
+aov4 <- aov(formula = GasFuel ~ G7Status_2014, data = nation2014)
+aov5 <- aov(formula = CementProduction ~ G7Status_2014, data = nation2014)
+aov6 <- aov(formula = GasFlaring ~ G7Status_2014, data = nation2014)
+aov7 <- aov(formula = PerCapitaCO2 ~ G7Status_2014, data = nation2014)
+aov8 <- aov(formula = EmBunkerFuel ~ G7Status_2014, data = nation2014)
+
+# List of ANOVA models
+aov_models <- list(aov1, aov2, aov3, aov4, aov5, aov6, aov7, aov8)
+
+# Extract and tidy ANOVA results
+anova_results <- lapply(aov_models, tidy)
+
+# Combine the results into a single data frame
+combined_results <- do.call(rbind, lapply(anova_results, function(result) {
+  result$variable <- rownames(result)
+  result}))
+
+# Create a nice-looking table
+kbl(combined_results) %>% kable_paper(bootstrap_options = "striped", full_width = F)
+
+```
+
+  Both the United States and Japans CO2 emission between 1960-2010 have the greatest correlations. The lines that represent these nations emissions have a positive slope, as years go on, emission totals increase.Italy and Canada have the lowest correlations for CO2 emission and time, based on the graph, the lines representing both these nations have very little slope. Notably, France, Germany, and the U.K. display a negative correlation between CO2 emissions and time. As years increase, these nation's emissions decrease.
+```{r message=FALSE, warning=FALSE, error=FALSE}
+nation_1751_2010 <- read_csv("CSV-FILES/CSV-FILES (2)/CSV-FILES/nation.1751_2010.csv")
+nation_1751_2010 -> nation2010
+colnames(nation2010)[3] <- "TotalCO2Em"
+colnames(nation2010)[4] <- "SolidFuel"
+colnames(nation2010)[5] <- "LiquidFuel"
+colnames(nation2010)[6] <- "GasFuel"
+colnames(nation2010)[7] <- "CementProduction"
+colnames(nation2010)[8] <- "GasFlaring"
+colnames(nation2010)[9] <- "PerCapitaCO2"
+colnames(nation2010)[10] <- "EmBunkerFuel"
+
+nation2010[, 2:10] <- sapply(nation2010[, 2:10], as.numeric)
+
+# Define G7 countries
+G7 <- c("ITALY (INCLUDING SAN MARINO)", "CANADA", "GERMANY", "JAPAN", "UNITED KINGDOM","UNITED STATES OF AMERICA", "FRANCE (INCLUDING MONACO)")
+
+# Filter data for G7 countries and the specified time range (1960-2010)
+g7_countries <- nation2010 %>%
+  filter(Nation %in% G7, Year >= 1960, Year <= 2010)
+
+# Calculate correlation matrix for TotalCO2Em
+correlation_matrix <- cor(g7_countries[, "TotalCO2Em", drop = FALSE], method = "pearson")
+
+# Find the two countries with the highest and lowest correlation
+highest_corr_pair <- which(correlation_matrix == max(correlation_matrix), arr.ind = TRUE)
+lowest_corr_pair <- which(correlation_matrix == min(correlation_matrix), arr.ind = TRUE)
+
+# Plot a scatter plot with regression line
+ggplot(g7_countries, aes(x = Year, y = TotalCO2Em, color = Nation)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Total Emissions Correlation (1960-2010) for G7 Countries",
+       x = "Year",
+       y = "Total Emissions") +
+  theme_minimal()
+
+```
+  
+  Below are several plots depicting a linear regression model for the United State's total CO2 emissions from the years 1970-2010. The linear regression model displayed shows several dips and hikes in the data over the years. The decrease in emissions during the 1980's could be attributed to the Clean Air Act being amended in 1977 by the U.S. Congress to include a schedule for emission reductions. Several years later in the early 1980's, new cars were required to meet the Clean Air Act standards for the first time, and vehicle inspection programs were established where high air pollution occurred. Based on the model, the relationship between years and CO2 emission is positive.Though, the curved pattern of the residuals show that a linear regression may not be the most appropriate model, instead a curvilinear model would work best for this type of ebb and flow data.
+  
+```{r message=FALSE, warning=FALSE, error=FALSE}
+library(readr)
+library(tidyverse)
+nation_1751_2010 <- read_csv("CSV-FILES/CSV-FILES (2)/CSV-FILES/nation.1751_2010.csv")
+nation20102 <- nation_1751_2010
+
+# Assuming 'nation20102' is your data frame with columns 'Country', 'Year', and 'TotalCO2'
+# Replace 'nation20102' with your actual data frame name
+
+library(ggplot2)
+colnames(nation20102)[3] <- "TotalCO2Em"
+
+# Filter data for the United States from 1970 to 2010
+us_data <- nation20102 %>%
+  filter(Nation == "UNITED STATES OF AMERICA", Year >= 1970, Year <= 2010)
+
+# Create a linear regression model
+linear_model <- lm(TotalCO2Em ~ Year, data = us_data)
+
+# Create a plot of the linear regression model
+print(ggplot(us_data, aes(x = Year, y = TotalCO2Em)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(title = "Linear Regression Model (US)",
+       x = "Year",
+       y = "Total CO2 Emission") +
+  theme_minimal())
+
+# Create a scatter plot of the raw data
+print(ggplot(us_data, aes(x = Year, y = TotalCO2Em)) +
+  geom_point() +
+  labs(title = "Total CO2 Emission from 1970 to 2010 (US)",
+       x = "Year",
+       y = "Total CO2 Emission") +
+  theme_minimal())
+
+
+# Plot diagnostics for the linear regression model
+plot(linear_model, which = 1)  # Residuals vs Fitted
+plot(linear_model, which = 2)  # Normal Q-Q plot
+plot(linear_model, which = 3)  # Scale-Location plot
+
+```
+
+  The graph below depicts total emissions by per continent during the year 1984 and the year 2014.The results display an increase of total CO2 emissions over three decades from most of the continents, most notably a huge spike in emissions output by Asia. The only continent that has reduced their emission output over the years is Europe.
+  
+```{r message=FALSE, warning=FALSE, error=FALSE}
+library(readr)
+nation_1751_2014 <- read_csv("CSV-FILES/CSV-FILES (2)/CSV-FILES/nation.1751_2014.csv")
+nation_1751_2014 -> nation2014
+library(countrycode)
+library(dplyr)
+library(ggplot2)
+colnames(nation2014)[3] <- "TotalCO2Em"
+
+# Read the data
+nation_1751_2014 <- read_csv("CSV-FILES/CSV-FILES (2)/CSV-FILES/nation.1751_2014.csv")
+nation_1751_2014 -> nation2014
+
+# Rename columns
+colnames(nation2014)[3] <- "TotalCO2Em"
+
+# Create a vector of country names
+country_names <- nation2014$Nation
+
+# Map country names to continents
+continent_codes <- countrycode(country_names, origin = "country.name", destination = "continent")
+
+# Add the continent information
+nation2014$Continent <- continent_codes
+
+# Filter data for the years 1984 and 2014 and remove rows with NA in Continent
+nation2014 <- nation2014 %>%
+  filter(Year %in% c(1984, 2014), !is.na(Continent))
+
+# Group by continent and summarize total emissions
+summary_table <- nation2014 %>%
+  group_by(Continent, Year) %>%
+  summarise(TotalCO2Em = sum(TotalCO2Em, na.rm = TRUE))
+
+# Plot the graphic
+ggplot(summary_table, aes(x = Continent, y = TotalCO2Em, fill = as.factor(Year))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Total Emissions by Continent (1984 and 2014)",
+       x = "Continent",
+       y = "Total CO2 Emissions",
+       fill = "Year") +
+  theme_minimal()
+
+```
+
+  The data used for this test was the compiled emission data leading up to 2014. Based on the results from the Tukey test, the relationship between Oceania-Africa, Asia-Americas, Europe-Americas, and Europe-Asia are not statistically different, while the other countries are statistically different from each other. We can see this in the graph below, based on the amount of overlap between the countries, their mean level values are about the same. 
+
+```{r message=FALSE, warning=FALSE, error=FALSE}
+library(readr)
+nation_1751_2014 <- read_csv("CSV-FILES/CSV-FILES (2)/CSV-FILES/nation.1751_2014.csv")
+View(nation_1751_2014)
+nation_1751_2014 -> nation20142
+# Load necessary libraries
+library(dplyr)
+library(lmtest)
+library(countrycode)
+colnames(nation20142)[3] <- "TotalCO2Em"
+
+# Create a vector of country names
+country_names <- nation20142$Nation
+
+# Map country names to continents
+continent_codes <- countrycode(country_names, origin = "country.name", destination = "continent")
+
+# Add the continent information
+nation20142$Continent <- continent_codes
+
+# Perform ANOVA for total emissions by continent
+aov_result <- aov(TotalCO2Em ~ Continent, data = nation20142)
+
+tukey_result <- TukeyHSD(aov_result)
+
+par(mar = c(5, 8, 4, 2) + 0.1)
+plot(tukey_result, las=1)
+
+# Box plot for total emissions by continent
+library(ggplot2)
+
+# Table of means and standard deviations by continent
+summary_table <- nation20142 %>%
+  group_by(Continent) %>%
+  summarise(
+    Mean_TotalCO2Em = mean(TotalCO2Em, na.rm = TRUE),
+    SD_TotalCO2Em = sd(TotalCO2Em, na.rm = TRUE))
+
+```
+
+  The models show a shift in the differences between the continents from 1984 and 2014. In 1984, Europe and the Americas were producing most of the CO2 emissions. Since then, Asia has had a spike in CO2 emissions, while the other countries have had either a gradual increase in emissions output or a decrease. 
+
+
+Reference
+Boden, T.A., G. Marland, and R.J. Andres. 2013. Global, Regional, and National Fossil-Fuel CO2 Emissions. Carbon Dioxide Information Analysis Center, Oak Ridge National Laboratory, U.S. Department of Energy, Oak Ridge, Tenn., U.S.A. [doi](https://doi.org/10.3334/CDIAC/00001_V2013).
